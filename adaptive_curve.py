@@ -1,4 +1,4 @@
-import math
+import random
 from functools import lru_cache
 import matplotlib.pyplot as plt
 
@@ -121,9 +121,6 @@ class AdaptiveCurveIrm:
 
 if __name__ == "__main__":
     irm = AdaptiveCurveIrm()
-
-    import random
-    import time
 
     # Set a seed for reproducibility
     random.seed(42)

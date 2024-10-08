@@ -2,6 +2,6 @@
 
 ## To-do list
 
-- [x] Write readme
-- [ ] Write example
+- [ ] Write readme
+- [x] Write example
 - [ ] Create requirements.txt
