@@ -4,4 +4,4 @@
 
 - [ ] Write readme
 - [x] Write example
-- [ ] Create requirements.txt
+- [x] Create requirements.txt
