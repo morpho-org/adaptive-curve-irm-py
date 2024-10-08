@@ -1,5 +1,6 @@
 import math
 from functools import lru_cache
+import matplotlib.pyplot as plt
 
 
 class AdaptiveCurveIrm:
@@ -18,6 +19,9 @@ class AdaptiveCurveIrm:
         # State variables
         self.rate_at_target = self.INITIAL_RATE_AT_TARGET
         self.last_update = 0
+
+        # Memoization list for borrow rates and current time
+        self.memoized_rates = []
 
     @lru_cache(maxsize=1000)
     def borrow_rate(self, total_borrow_assets: int, total_supply_assets: int, current_time: int) -> int:
@@ -53,7 +57,12 @@ class AdaptiveCurveIrm:
         self.rate_at_target = end_rate_at_target
         self.last_update = current_time
 
-        return self._curve(avg_rate_at_target, err)
+        rate = self._curve(avg_rate_at_target, err)
+
+        # Memoize the borrow rate and current time
+        self.memoized_rates.append((current_time, rate))
+
+        return rate
 
     def _curve(self, rate_at_target: int, err: int) -> int:
         coeff = self.WAD - self.WAD * \
@@ -95,3 +104,49 @@ class AdaptiveCurveIrm:
         third_term = (second_term * first_term) // (3 * self.WAD)
 
         return first_term + second_term + third_term
+
+    def plot_rates(self):
+        times = [t for t, _ in self.memoized_rates]
+        rates = [r * self.SECONDS_PER_YEAR * 100 /
+                 self.WAD for _, r in self.memoized_rates]
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(times, rates)
+        plt.title('Borrow Rates Over Time')
+        plt.xlabel('Time')
+        plt.ylabel('Borrow Rate (%/year)')
+        plt.grid(True)
+        plt.show()
+
+
+if __name__ == "__main__":
+    irm = AdaptiveCurveIrm()
+
+    import random
+    import time
+
+    # Set a seed for reproducibility
+    random.seed(42)
+
+    # Current time in seconds
+    current_time = 0
+    for _ in range(50):
+        # Generate debt and total_supply around the target utilization
+        total_supply = irm.WAD  # Set total_supply to WAD for simplicity
+        target_debt = total_supply * \
+            (irm.TARGET_UTILIZATION - irm.WAD // 10) // irm.WAD
+
+        # Generate debt as a normal distribution around the target
+        std_dev = irm.WAD // 10  # 10% of WAD as standard deviation
+        debt = int(random.gauss(target_debt, std_dev))
+
+        # Ensure debt is within [0, total_supply] range
+        debt = max(0, min(debt, total_supply))
+
+        print(100*debt/total_supply)
+        # Calculate borrow rate
+        rate = irm.borrow_rate(debt, total_supply, current_time)
+
+        # Advance time randomly between 1 hour and 1 week
+        current_time += random.randint(3600, 604800)
+    irm.plot_rates()
