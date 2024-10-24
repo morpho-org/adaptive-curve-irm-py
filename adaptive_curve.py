@@ -17,7 +17,7 @@ class AdaptiveCurveIrm:
         self.MAX_RATE_AT_TARGET = 2 * self.WAD // self.SECONDS_PER_YEAR
 
         # State variables
-        self.rate_at_target = self.INITIAL_RATE_AT_TARGET
+        self.rate_at_target = 0
         self.last_update = 0
 
         # Memoization list for borrow rates and current time
@@ -28,14 +28,14 @@ class AdaptiveCurveIrm:
         utilization = total_borrow_assets * \
             self.WAD // total_supply_assets if total_supply_assets > 0 else 0
 
-        err_norm_factor = self.WAD - \
-            self.TARGET_UTILIZATION if utilization > self.TARGET_UTILIZATION else self.TARGET_UTILIZATION
+        err_norm_factor = (self.WAD -
+                           self.TARGET_UTILIZATION) if utilization > self.TARGET_UTILIZATION else self.TARGET_UTILIZATION
         err = (utilization - self.TARGET_UTILIZATION) * \
             self.WAD // err_norm_factor
 
         start_rate_at_target = self.rate_at_target
 
-        if self.last_update == 0:
+        if start_rate_at_target == 0:
             avg_rate_at_target = self.INITIAL_RATE_AT_TARGET
             end_rate_at_target = self.INITIAL_RATE_AT_TARGET
         else:
