@@ -30,8 +30,6 @@ def test_first_borrow_rate_utilization_one(irm):
 
 
 def test_rate_after_utilization_one(irm):
-    irm.borrow_rate(0, irm.WAD, 0)
-
     first_rate = irm.borrow_rate(
         0, irm.WAD, 365 * 24 * 60 * 60 * 2) * irm.SECONDS_PER_YEAR / irm.WAD
     expected_rate = irm.INITIAL_RATE_AT_TARGET // 4 * irm.SECONDS_PER_YEAR / irm.WAD
