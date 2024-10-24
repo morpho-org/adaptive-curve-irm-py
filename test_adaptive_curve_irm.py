@@ -1,6 +1,7 @@
 import pytest
 import math
 from adaptive_curve import AdaptiveCurveIrm
+from solidity_math import MathLib
 
 
 @pytest.fixture
@@ -78,7 +79,7 @@ def test_rate_after_45_days_utilization_above_target_ping_every_minute(irm):
         rate = irm.borrow_rate(initial_borrow_assets,
                                total_supply_assets, 1+current_time)
         interest = initial_borrow_assets * \
-            irm.wTaylorCompounded(rate, 60) // irm.WAD
+            MathLib.w_taylor_compounded(rate, 60) // irm.WAD
         initial_borrow_assets += interest
         total_supply_assets += interest
         current_time += 60

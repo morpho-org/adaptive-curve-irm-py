@@ -1,6 +1,7 @@
 import random
 from functools import lru_cache
 import matplotlib.pyplot as plt
+from solidity_math import MathLib
 
 
 class AdaptiveCurveIrm:
@@ -25,13 +26,13 @@ class AdaptiveCurveIrm:
 
     @lru_cache(maxsize=1000)
     def borrow_rate(self, total_borrow_assets: int, total_supply_assets: int, current_time: int) -> int:
-        utilization = total_borrow_assets * \
-            self.WAD // total_supply_assets if total_supply_assets > 0 else 0
+        utilization = MathLib.w_div_down(
+            total_borrow_assets, total_supply_assets) if total_supply_assets > 0 else 0
 
         err_norm_factor = (self.WAD -
                            self.TARGET_UTILIZATION) if utilization > self.TARGET_UTILIZATION else self.TARGET_UTILIZATION
-        err = (utilization - self.TARGET_UTILIZATION) * \
-            self.WAD // err_norm_factor
+        err = MathLib.w_div_to_zero(
+            utilization - self.TARGET_UTILIZATION, err_norm_factor)
 
         start_rate_at_target = self.rate_at_target
 
@@ -39,7 +40,7 @@ class AdaptiveCurveIrm:
             avg_rate_at_target = self.INITIAL_RATE_AT_TARGET
             end_rate_at_target = self.INITIAL_RATE_AT_TARGET
         else:
-            speed = self.ADJUSTMENT_SPEED * err // self.WAD
+            speed = MathLib.w_mul_to_zero(self.ADJUSTMENT_SPEED, err)
             elapsed = (current_time - self.last_update)
             linear_adaptation = speed * elapsed
 
@@ -65,13 +66,13 @@ class AdaptiveCurveIrm:
         return rate
 
     def _curve(self, rate_at_target: int, err: int) -> int:
-        coeff = self.WAD - self.WAD * \
-            self.WAD // self.CURVE_STEEPNESS if err < 0 else self.CURVE_STEEPNESS - self.WAD
-        return ((coeff * err // self.WAD + self.WAD) * rate_at_target) // self.WAD
+        coeff = self.WAD - MathLib.w_div_to_zero(
+            self.WAD, self.CURVE_STEEPNESS) if err < 0 else self.CURVE_STEEPNESS - self.WAD
+        return MathLib.w_mul_to_zero(MathLib.w_mul_to_zero(coeff, err) + self.WAD, rate_at_target)
 
     def _new_rate_at_target(self, start_rate_at_target: int, linear_adaptation: int) -> int:
-        new_rate = start_rate_at_target * \
-            self._w_exp(linear_adaptation) // self.WAD
+        new_rate = MathLib.w_mul_to_zero(
+            start_rate_at_target, self._w_exp(linear_adaptation))
         return max(min(new_rate, self.MAX_RATE_AT_TARGET), self.MIN_RATE_AT_TARGET)
 
     def _w_exp(self, x: int) -> int:
@@ -97,13 +98,6 @@ class AdaptiveCurveIrm:
             return exp_r << q
         else:
             return exp_r >> (-q)
-
-    def wTaylorCompounded(self, x: int, n: int) -> int:
-        first_term = x * n
-        second_term = (first_term * first_term) // (2 * self.WAD)
-        third_term = (second_term * first_term) // (3 * self.WAD)
-
-        return first_term + second_term + third_term
 
     def plot_rates(self):
         times = [t for t, _ in self.memoized_rates]
